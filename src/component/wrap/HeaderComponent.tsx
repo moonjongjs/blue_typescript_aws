@@ -1,0 +1,112 @@
+import { useEffect, useState } from "react";
+import './scss/HeaderComponent.scss';
+import axios from "axios";
+import { Link, Outlet } from "react-router-dom";
+
+export default function HeaderComponent(){
+
+    // 서브메뉴 상태관리
+    const [path] = useState<string[]>(['/sub1','/sub2','/sub3','/sub4']);
+    const [sub, setSub] = useState<boolean[]>([false,false,false,false]);
+
+    // 방법 1
+    // const [state, setState] = useState<{네비게이션: Record<string, string[][]>}>({
+    //     네비게이션: {}
+    // });
+
+    // 방법 2
+    type 네비게이션타입 = {
+       [메인메뉴: string]: string[][];
+    }
+    const [state, setState] = useState<{네비게이션: 네비게이션타입}>({
+        네비게이션: {}
+    });
+    
+
+    useEffect(()=>{
+        axios({
+            url: './data/header.json',
+            method: 'GET' 
+        })
+        .then((res)=>{
+            setState({
+               네비게이션: res.data
+            })
+        })
+        .catch((err)=>{
+            console.log( err );
+        });
+    }, []);
+
+   
+
+    // 각메인버튼에 마우스 오버시 각서브메뉴가 보인다.
+    // 함수를 1개 가지고 여러개를 대신할 수 있는 방법은 함수(매개변수)
+    // 변수는 1개 가지고 여러개를 대신할 수 있는 방법은  배열 []
+    const onMouseEnterMain=(idx:number)=>{
+    //    let imsi = [false,false,false,false];
+       let imsi =  Array(sub.length).fill(false);
+       imsi[idx] = true;
+    //    console.log( imsi ) ;
+       setSub(imsi);
+    }
+   
+
+    // nav 영역을 떠나면 
+    // 모든서브메뉴 숨긴다.
+    const onMouseLeaveNav=()=>{
+        setSub( Array(sub.length).fill(false) )
+    }
+
+
+    return(
+        <>
+            <header id="header">
+                <div className="row1">
+                    <h1><Link to="/main" title="푸른마을"><span>푸른</span><em>마을</em></Link></h1>
+                </div>
+                <div className="row2">
+                    <nav id="nav"  onMouseLeave={onMouseLeaveNav}>
+                        <ul>
+                        {
+                            state?.네비게이션 &&
+                            Object.keys(state.네비게이션).map((item, idx)=>
+                                <li key={item} data-key={item}>
+                                    <Link 
+                                        to={path[idx]} /* 패스네임 pathname /sub1 */
+                                        className="main-btn" 
+                                        title={item}
+                                        onMouseEnter={()=>onMouseEnterMain(idx)}
+                                    >{item}</Link>
+                                {  sub[idx] &&
+                                    <div className={`sub sub${idx+1}`}>
+                                        <ul>
+                                        {
+                                        state.네비게이션[item].map((item2, idx2)=>
+                                                <li key={idx2} data-key={idx2}> {/* 줄 */}
+                                                    {
+                                                        item2.map((item3, idx3)=>
+                                                            <span key={idx3} data-key={idx3}>
+                                                                <a href="!#">{item3}</a>
+                                                            </span>
+                                                        )
+                                                    }
+                                                </li>
+                                            )    
+                                        }
+                                        </ul>
+                                    </div>
+                                }
+                                </li>
+                            )                            
+                        }
+                        </ul>
+                    </nav>
+                </div>
+            </header>
+
+            <Outlet />
+
+        </>
+    )
+}
